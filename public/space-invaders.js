@@ -46,6 +46,7 @@ window.addEventListener('load', () => {
 		}
 	}
 
+	// our game classes! ships + fleets + invaders
 	class Entity {
 		constructor(params) {
 			this.x = params.x || 0;
@@ -53,15 +54,12 @@ window.addEventListener('load', () => {
 			this.width = params.width || 0;
 			this.height = params.height || 0;
 			this.sprite = params.sprite || 0;
-			this.framesAlive = 0;
 		}
-		update() {
-			this.framesAlive += 1;
-		}
+		update() {}
 		render() {
-			ctx.strokeStyle = '#666';
-			ctx.lineWidth = 1;
-			ctx.strokeRect(Math.round(this.x) + 0.5, Math.round(this.y) + 0.5, this.width - 1, this.height - 1);
+			// ctx.strokeStyle = '#666';
+			// ctx.lineWidth = 1;
+			// ctx.strokeRect(Math.round(this.x) + 0.5, Math.round(this.y) + 0.5, this.width - 1, this.height - 1);
 			drawSprite(this.sprite, this.x + Math.round(this.width / 2), this.y + Math.round(this.height / 2));
 		}
 	};
@@ -78,7 +76,6 @@ window.addEventListener('load', () => {
 			});
 		}
 		update() {
-			super.update();
 			if (buttons.KeyA || buttons.ArrowLeft) {
 				this.x -= 1;
 			}
@@ -89,14 +86,76 @@ window.addEventListener('load', () => {
 		}
 	};
 
-	class Invader extends Entity {
+	class InvaderFleet {
+		constructor(params) {
+			this.rows = params.rows.map((InvaderClass, i) => {
+				return new InvaderFleetRow({
+					y: 70 - 16 * i,
+					numInvaders: params.numInvadersPerRow,
+					InvaderClass
+				});
+			});
+			this.framesUntilMove = 20;
+			this.nextRowToMove = 0;
+			this.nextMoveX = 1;
+			this.nextMoveY = 0;
+		}
 		update() {
-			super.update();
-			if (this.framesAlive%60 === 10) {
-				this.sprite += 1;
+			this.framesUntilMove -= 1;
+			if (this.framesUntilMove <= 0) {
+				this.framesUntilMove = 20;
+				this.rows[this.nextRowToMove].update(this.nextMoveX, this.nextMoveY);
+				this.nextRowToMove += 1;
+				if (this.nextRowToMove >= this.rows.length) {
+					this.nextRowToMove = 0;
+					this.nextMoveX *= -1;
+				}
 			}
-			else if (this.framesAlive%60 === 40) {
+		}
+		render() {
+			for (let row of this.rows) {
+				row.render();
+			}
+		}
+	}
+
+	class InvaderFleetRow {
+		constructor(params) {
+			this.invaders = [];
+			for (let i = 0; i < params.numInvaders; i++) {
+				this.invaders.push(new params.InvaderClass({
+					x: 22 + 16 * i,
+					y: params.y
+				}));
+			}
+		}
+		update(dx, dy) {
+			for (let invader of this.invaders) {
+				invader.update(dx, dy);
+			}
+		}
+		render() {
+			for (let invader of this.invaders) {
+				invader.render();
+			}
+		}
+	}
+
+	class Invader extends Entity {
+		constructor(params) {
+			super({
+				height: 8,
+				...params
+			});
+		}
+		update(dx, dy) {
+			this.x += dx;
+			this.y += dy;
+			if (this.sprite % 2 === 0) {
 				this.sprite -= 1;
+			}
+			else {
+				this.sprite += 1;
 			}
 		}
 	}
@@ -105,9 +164,9 @@ window.addEventListener('load', () => {
 		constructor(params) {
 			super({
 				width: 8,
-				height: 8,
 				sprite: 1,
-				...params
+				...params,
+				x: params.x + 1
 			});
 		}
 	}
@@ -116,52 +175,44 @@ window.addEventListener('load', () => {
 		constructor(params) {
 			super({
 				width: 11,
-				height: 8,
 				sprite: 3,
 				...params
 			});
 		}
 	}
 
-	class BigInvader extends Invader {
+	class LargeInvader extends Invader {
 		constructor(params) {
 			super({
 				width: 12,
-				height: 8,
 				sprite: 5,
 				...params
 			});
 		}
 	}
 
-	let entities = [];
-	entities.push(new Ship({}));
-	entities.push(new SmallInvader({ x: 50, y: 50 }));
-	entities.push(new MediumInvader({ x: 100, y: 50 }));
-	entities.push(new BigInvader({ x: 150, y: 50 }));
+	// initialize the game with just a ship against a fleet
+	let ship = new Ship({});
+	let fleet = new InvaderFleet({
+		rows: [ LargeInvader, MediumInvader, SmallInvader ],
+		numInvadersPerRow: 11
+	});
 
-	function update() {
-		// update all of our game entities
-		for (let entity of Object.values(entities)) {
-			entity.update();
-		}
-	}
+	// kick off an update + render game loop
+	function loop() {
+		// update
+		ship.update();
+		fleet.update();
 
-	function render() {
 		// clear the canvas
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
 		// draw all of our game entities
-		for (let entity of Object.values(entities)) {
-			entity.render();
-		}
-	}
+		ship.render();
+		fleet.render();
 
-	// kick off an update + render game loop
-	function loop() {
-		update();
-		render();
+		// schedule the next loop
 		window.requestAnimationFrame(loop);
 	}
 	window.requestAnimationFrame(loop);

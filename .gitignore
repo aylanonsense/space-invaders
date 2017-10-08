@@ -1,3 +1,6 @@
+# Mac OSX junk
+.DS_Store
+
 # Logs
 logs
 *.log

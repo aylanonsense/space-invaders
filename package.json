@@ -1,0 +1,14 @@
+{
+  "name": "space-invaders",
+  "version": "0.0.1",
+  "description": "Space Invaders in Node.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bridgs/space-invaders.git"
+  },
+  "author": "bridgs",
+  "dependencies": {
+    "express": "^4.16.1"
+  }
+}

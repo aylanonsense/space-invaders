@@ -1,2 +1,2 @@
 # space-invaders
-Space invaders in Node.
+Space Invaders in Node.

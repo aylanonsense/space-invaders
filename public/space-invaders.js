@@ -74,17 +74,40 @@ window.addEventListener('load', () => {
 				sprite: 0,
 				...params
 			});
+			this.shootCooldown = 0;
 		}
 		update() {
+			if (this.shootCooldown > 0) {
+				this.shootCooldown -= 1;
+			}
 			if (buttons.KeyA || buttons.ArrowLeft) {
 				this.x -= 1;
 			}
 			if (buttons.KeyD || buttons.ArrowRight) {
 				this.x += 1;
 			}
+			if (buttons.Space && this.shootCooldown <= 0) {
+				lazers.push(new ShipLazer({ x: this.x + this.width / 2 - 1, y: this.y }));
+				this.shootCooldown = 30;
+			}
+			// if (buttons)
 			this.x = Math.max(10, Math.min(this.x, GAME_WIDTH - this.width - 10));
 		}
 	};
+
+	class ShipLazer extends Entity {
+		constructor(params) {
+			super({
+				width: 1,
+				height: 3,
+				sprite: 7,
+				...params
+			});
+		}
+		update() {
+			this.y -= 1;
+		}
+	}
 
 	class InvaderFleet {
 		constructor(params) {
@@ -193,6 +216,7 @@ window.addEventListener('load', () => {
 
 	// initialize the game with just a ship against a fleet
 	let ship = new Ship({});
+	let lazers = [];
 	let fleet = new InvaderFleet({
 		rows: [ LargeInvader, MediumInvader, SmallInvader ],
 		numInvadersPerRow: 11
@@ -202,6 +226,9 @@ window.addEventListener('load', () => {
 	function loop() {
 		// update
 		ship.update();
+		lazers.forEach(lazer => {
+			lazer.update();
+		});
 		fleet.update();
 
 		// clear the canvas
@@ -210,6 +237,9 @@ window.addEventListener('load', () => {
 
 		// draw all of our game entities
 		ship.render();
+		lazers.forEach(lazer => {
+			lazer.render();
+		});
 		fleet.render();
 
 		// schedule the next loop
